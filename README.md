@@ -64,6 +64,30 @@ After pushing to GitHub, set the repository Pages source to `GitHub Actions` in 
 
 The app includes a small web app manifest, SVG icon, and minimal service worker. Browsers that support installable PWAs can install it from the deployed or local preview URL. The service worker caches the app shell and same-origin assets for basic offline use after the app has loaded once.
 
+## Analytics
+
+Usage tracking is optional and uses GoatCounter when `VITE_GOATCOUNTER_ENDPOINT` is configured.
+
+The app tracks coarse product statistics only:
+
+- page views through GoatCounter's normal script
+- import opened
+- import success/failure
+- rendered card-count buckets
+- warning/error-count buckets
+- profile changes
+- SVG/PNG export clicks
+
+It does not send pasted molecule-card text, SMILES strings, captions, atom labels, arrows, or rendered images.
+
+For local setup, copy `.env.example` to `.env.local` and set:
+
+```bash
+VITE_GOATCOUNTER_ENDPOINT=https://YOURCODE.goatcounter.com/count
+```
+
+For GitHub Pages, create a repository variable named `GOATCOUNTER_ENDPOINT` with the same value.
+
 ## Input Syntax
 
 ```text

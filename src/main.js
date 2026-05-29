@@ -1,6 +1,7 @@
 import { parseMolBlocks } from "./parser.js";
 import { renderMoleculeCard } from "./renderer.js";
 import { applyColorTheme, COLOR_THEME } from "./colorTheme.js";
+import { bucketCount, initAnalytics, trackUsageEvent } from "./analytics.js";
 import "./styles.css";
 
 export const DEFAULT_INPUT = `::mol
@@ -224,7 +225,9 @@ let tabs = loadTabs();
 let activeTabId = loadActiveTabId(tabs);
 let renderSettings = loadRenderSettings();
 let importPreferences = loadImportPreferences();
+let pendingTrackedRender = null;
 
+initAnalytics();
 input.value = "";
 openInNewTab.checked = importPreferences.openInNewTab;
 syncSettingsUi();
@@ -259,6 +262,7 @@ openInNewTab.addEventListener("change", () => {
 profileSettings.addEventListener("click", () => settingsDialog.showModal());
 closeSettings.addEventListener("click", () => settingsDialog.close());
 importPackage.addEventListener("click", () => {
+  trackUsageEvent("import-opened");
   input.value = "";
   updateImportStatus();
   importDialog.showModal();
@@ -283,6 +287,7 @@ settingsDialog.addEventListener("change", (event) => {
 
   saveRenderSettings();
   updateProfileStatus();
+  trackUsageEvent("profile-changed", event.target.name === "renderMode" ? event.target.value : "export-controls");
   inputVersion += 1;
   renderFromInput();
 });
@@ -330,6 +335,7 @@ cards.addEventListener("click", async (event) => {
     const warningText = warning?.dataset.warningText || warning?.innerText || "";
     try {
       await navigator.clipboard.writeText(warningText);
+      trackUsageEvent("warnings-copied");
       flashButton(button, "Copied");
     } catch {
       flashButton(button, "Failed");
@@ -345,8 +351,10 @@ cards.addEventListener("click", async (event) => {
   try {
     if (button.dataset.action === "download-svg") {
       downloadText(`${getFileName(card)}.svg`, serializeSvg(svg), "image/svg+xml");
+      trackUsageEvent("export-clicked", "svg");
     } else if (button.dataset.action === "download-png") {
       await downloadPng(card, svg);
+      trackUsageEvent("export-clicked", "png");
     }
     flashButton(button, "Saved");
   } catch (error) {
@@ -412,6 +420,7 @@ function applyImportedSource() {
   if (mols.length === 0) {
     statusLog.textContent = "Import failed: no ::mol blocks found.";
     flowStatus.textContent = "Import failed";
+    trackUsageEvent("import-failed", "empty");
     return;
   }
 
@@ -429,6 +438,8 @@ function applyImportedSource() {
   }
 
   inputVersion += 1;
+  pendingTrackedRender = { molCount: mols.length };
+  trackUsageEvent("import-applied", `cards-${bucketCount(mols.length)}`);
   saveTabs();
   renderTabs();
   closeImportPanel();
@@ -463,10 +474,25 @@ async function renderFromInput() {
   const warningTexts = Array.from(cards.querySelectorAll(".annotation-warning"))
     .map((warning) => warning.dataset.warningText)
     .filter(Boolean);
+  const errorCount = cards.querySelectorAll(".render-error").length;
+  trackRenderCompletion(mols.length, warningTexts.length, errorCount);
   flowStatus.textContent = warningTexts.length ? `${warningTexts.length} warning${warningTexts.length === 1 ? "" : "s"}` : "Rendered";
   statusLog.textContent = warningTexts.length
     ? warningTexts.join("\n\n")
     : `Rendered ${mols.length} molecule card${mols.length === 1 ? "" : "s"} without warnings.`;
+}
+
+function trackRenderCompletion(cardCount, warningCount, errorCount) {
+  if (!pendingTrackedRender) {
+    return;
+  }
+
+  pendingTrackedRender = null;
+  trackUsageEvent("render-completed", `cards-${bucketCount(cardCount)}`);
+  trackUsageEvent("render-warnings", `warnings-${bucketCount(warningCount)}`);
+  if (errorCount > 0) {
+    trackUsageEvent("render-errors", `errors-${bucketCount(errorCount)}`);
+  }
 }
 
 function renderTabs() {
