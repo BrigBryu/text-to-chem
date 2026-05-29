@@ -4,66 +4,6 @@ Paste LLM-generated SMILES blocks and render organic chemistry note cards with l
 
 Text to Chem is a small browser-based renderer for structured chemistry note packages. It runs client-side in the browser, keeps the source text local, and focuses on rendering study cards. It is not a molecule editor or chemistry validator.
 
-## Run Locally
-
-This project uses npm.
-
-```bash
-npm install
-npm run dev
-```
-
-Open the local URL printed by Vite. Use `Import package` to paste a molecule-card package; after import, the source closes and the app shows rendered chemistry only.
-
-## Build Locally
-
-```bash
-npm run build
-npm run preview
-```
-
-The production build is written to `dist/`.
-
-Run the test/build verification pass:
-
-```bash
-npm run verify
-```
-
-## GitHub Pages Deployment
-
-The app is configured for a GitHub Pages project site at:
-
-```text
-https://USERNAME.github.io/text-to-chem/
-```
-
-Vite uses this base path by default in [vite.config.js](./vite.config.js):
-
-```js
-base: process.env.VITE_BASE_PATH || "/text-to-chem/"
-```
-
-If your repository name is different, change `/text-to-chem/` to `/<repo-name>/`, or build with an override:
-
-```bash
-VITE_BASE_PATH="/your-repo-name/" npm run build
-```
-
-For a custom domain or root deployment, use:
-
-```bash
-VITE_BASE_PATH="/" npm run build
-```
-
-The GitHub Actions workflow in [.github/workflows/deploy.yml](./.github/workflows/deploy.yml) builds on pushes to `main` and deploys `dist/` with the official GitHub Pages actions.
-
-After pushing to GitHub, set the repository Pages source to `GitHub Actions` in repository settings.
-
-## PWA
-
-The app includes a small web app manifest, SVG icon, and minimal service worker. Browsers that support installable PWAs can install it from the deployed or local preview URL. The service worker caches the app shell and same-origin assets for basic offline use after the app has loaded once.
-
 ## Analytics
 
 Usage tracking is optional and uses GoatCounter when `VITE_GOATCOUNTER_ENDPOINT` is configured.
