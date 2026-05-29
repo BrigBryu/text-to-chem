@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Text to Chem icon">
+  <rect width="512" height="512" rx="72" fill="#282828"/>
+  <rect x="72" y="96" width="368" height="320" rx="24" fill="#fbf7ed" stroke="#d5c4a1" stroke-width="12"/>
+  <path d="M162 267l68-72h92l56 72-56 72h-92z" fill="none" stroke="#1d2021" stroke-width="20" stroke-linejoin="round"/>
+  <circle cx="162" cy="267" r="15" fill="#1d2021"/>
+  <circle cx="230" cy="195" r="15" fill="#1d2021"/>
+  <circle cx="322" cy="195" r="15" fill="#1d2021"/>
+  <circle cx="378" cy="267" r="15" fill="#1d2021"/>
+  <circle cx="322" cy="339" r="15" fill="#1d2021"/>
+  <circle cx="230" cy="339" r="15" fill="#1d2021"/>
+  <text x="256" y="293" text-anchor="middle" fill="#2563eb" font-family="Arial, sans-serif" font-size="72" font-weight="700">:</text>
+</svg>

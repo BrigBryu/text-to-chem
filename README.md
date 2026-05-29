@@ -1,30 +1,68 @@
 # Text to Chem
 
-A small local-only chemistry note renderer for organic chemistry studying. Import `::mol` blocks with valid SMILES plus manual annotations, and the app renders molecule cards with lone-pair dots, formal charges, arrows, and captions.
+Paste LLM-generated SMILES blocks and render organic chemistry note cards with lone pairs, formal charges, and captions.
 
-## Run
+Text to Chem is a small browser-based renderer for structured chemistry note packages. It runs client-side in the browser, keeps the source text local, and focuses on rendering study cards. It is not a molecule editor or chemistry validator.
+
+## Run Locally
+
+This project uses npm.
 
 ```bash
 npm install
 npm run dev
 ```
 
-Then open the local URL printed by Vite.
+Open the local URL printed by Vite. Use `Import package` to paste a molecule-card package; after import, the source closes and the app shows rendered chemistry only.
 
-Use `Import` to paste new LLM output. Check `Open in new tab` to keep the current rendered set and create another in-app tab; uncheck it to overwrite the active tab. Use `Edit source` when you want to reopen the current tab's source text. The source box stays hidden while you study or export cards.
-
-You can also build static files:
+## Build Locally
 
 ```bash
 npm run build
 npm run preview
 ```
 
+The production build is written to `dist/`.
+
 Run the test/build verification pass:
 
 ```bash
 npm run verify
 ```
+
+## GitHub Pages Deployment
+
+The app is configured for a GitHub Pages project site at:
+
+```text
+https://USERNAME.github.io/text-to-chem/
+```
+
+Vite uses this base path by default in [vite.config.js](./vite.config.js):
+
+```js
+base: process.env.VITE_BASE_PATH || "/text-to-chem/"
+```
+
+If your repository name is different, change `/text-to-chem/` to `/<repo-name>/`, or build with an override:
+
+```bash
+VITE_BASE_PATH="/your-repo-name/" npm run build
+```
+
+For a custom domain or root deployment, use:
+
+```bash
+VITE_BASE_PATH="/" npm run build
+```
+
+The GitHub Actions workflow in [.github/workflows/deploy.yml](./.github/workflows/deploy.yml) builds on pushes to `main` and deploys `dist/` with the official GitHub Pages actions.
+
+After pushing to GitHub, set the repository Pages source to `GitHub Actions` in repository settings.
+
+## PWA
+
+The app includes a small web app manifest, SVG icon, and minimal service worker. Browsers that support installable PWAs can install it from the deployed or local preview URL. The service worker caches the app shell and same-origin assets for basic offline use after the app has loaded once.
 
 ## Input Syntax
 
@@ -110,11 +148,12 @@ Each rendered card has:
 - `SVG` for a clean molecule SVG download.
 - `PNG` for a high-resolution molecule PNG download.
 
-Exports include the molecule drawing and manual annotations on an off-white background. They do not include the editor UI, title, or caption.
+Exports include the molecule drawing and manual annotations on an off-white background. They do not include the app UI, title, or caption.
 
 ## Limitations
 
 - This is a renderer, not a chemistry editor.
+- This is not a chemistry validator.
 - Lone pairs and charges are manual annotations.
 - Curved arrows are manual geometry annotations.
 - Atom references are resolved by element order only.

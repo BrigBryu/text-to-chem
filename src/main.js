@@ -82,7 +82,7 @@ app.innerHTML = `
     <section class="topbar" aria-label="Import controls">
       <div class="brand-block">
         <h1>Text to Chem</h1>
-        <p>Import molecule-card text, render notes, export clean structures.</p>
+        <p>Browser-only renderer: no account, paste structured molecule blocks, not a full chemistry editor.</p>
       </div>
       <div class="topbar-actions">
         <span id="parseStatus"></span>
@@ -100,7 +100,6 @@ app.innerHTML = `
       <section class="output-pane" aria-live="polite" aria-label="Rendered molecule cards">
         <div class="output-bar">
           <strong>Rendered cards</strong>
-          <span id="outputStatus"></span>
         </div>
         <div id="cards" class="cards"></div>
       </section>
@@ -187,7 +186,6 @@ const cards = document.querySelector("#cards");
 const parseStatus = document.querySelector("#parseStatus");
 const profileStatus = document.querySelector("#profileStatus");
 const importStatus = document.querySelector("#importStatus");
-const outputStatus = document.querySelector("#outputStatus");
 const statusLog = document.querySelector("#statusLog");
 const flowStatus = document.querySelector("#flowStatus");
 const shortcutsPanel = document.querySelector("#shortcutsPanel");
@@ -366,6 +364,7 @@ document.addEventListener("keydown", (event) => {
 
 renderTabs();
 renderFromInput();
+registerServiceWorker();
 
 function updateImportStatus() {
   const mols = parseMolBlocks(input.value);
@@ -420,11 +419,9 @@ async function renderFromInput() {
   const version = inputVersion;
   const mols = getActiveMols();
   parseStatus.textContent = `${mols.length} molecule${mols.length === 1 ? "" : "s"}`;
-  outputStatus.textContent = mols.length ? "Rendering" : "";
 
   if (mols.length === 0) {
     cards.innerHTML = `<div class="empty-state">No molecule blocks found.</div>`;
-    outputStatus.textContent = "";
     flowStatus.textContent = "No cards";
     return;
   }
@@ -445,7 +442,6 @@ async function renderFromInput() {
   const warningTexts = Array.from(cards.querySelectorAll(".annotation-warning"))
     .map((warning) => warning.dataset.warningText)
     .filter(Boolean);
-  outputStatus.textContent = `${mols.length} ready`;
   flowStatus.textContent = warningTexts.length ? `${warningTexts.length} warning${warningTexts.length === 1 ? "" : "s"}` : "Rendered";
   statusLog.textContent = warningTexts.length
     ? warningTexts.join("\n\n")
@@ -704,4 +700,16 @@ async function copyPromptText(button, text, originalLabel) {
   window.setTimeout(() => {
     button.textContent = originalLabel;
   }, 1200);
+}
+
+function registerServiceWorker() {
+  if (!("serviceWorker" in navigator) || window.location.protocol === "file:") {
+    return;
+  }
+
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => {
+      // Offline install is best-effort; rendering should never depend on it.
+    });
+  });
 }

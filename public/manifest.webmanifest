@@ -1,0 +1,18 @@
+{
+  "name": "Text to Chem",
+  "short_name": "Text to Chem",
+  "description": "Paste LLM-generated SMILES blocks and render organic chemistry note cards with lone pairs, formal charges, and captions.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#282828",
+  "theme_color": "#3c3836",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
