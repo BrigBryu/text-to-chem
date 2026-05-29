@@ -226,7 +226,8 @@ textarea:focus {
   box-shadow: 0 0 0 2px var(--accent-ring);
 }
 
-#settingsDialog {
+#settingsDialog,
+#importDialog {
   width: min(920px, calc(100vw - 32px));
   max-height: calc(100vh - 40px);
   padding: 0;
@@ -237,15 +238,21 @@ textarea:focus {
   box-shadow: 0 28px 80px var(--dialog-shadow);
 }
 
-#settingsDialog::backdrop {
+#settingsDialog::backdrop,
+#importDialog::backdrop {
   background: var(--overlay);
 }
 
-.settings-panel {
+.settings-panel,
+.import-panel {
   display: flex;
   flex-direction: column;
   gap: 14px;
   padding: 18px;
+}
+
+.import-panel {
+  height: min(720px, calc(100vh - 40px));
 }
 
 .import-heading {
@@ -354,8 +361,7 @@ textarea:focus {
 }
 
 .workbench {
-  display: grid;
-  grid-template-columns: minmax(360px, 0.9fr) minmax(0, 1.4fr);
+  display: block;
   min-height: 0;
   flex: 1 1 auto;
   background:
@@ -363,27 +369,16 @@ textarea:focus {
     repeating-linear-gradient(0deg, transparent, transparent 23px, var(--workbench-grid) 24px);
 }
 
-.input-pane {
+.import-console-header {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-  min-width: 0;
-  min-height: 0;
-  padding: 14px;
-  border-right: 1px solid var(--border);
-  background: var(--panel);
-}
-
-.pane-header {
-  display: flex;
-  align-items: end;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   color: var(--muted);
   font-size: 12px;
 }
 
-.pane-header strong {
+.import-console-header strong {
   display: block;
   color: var(--text);
   font-size: 13px;
@@ -454,13 +449,13 @@ textarea:focus {
 }
 
 .status-log {
-  min-height: 54px;
-  max-height: 130px;
+  min-height: 0;
+  max-height: 42px;
   overflow: auto;
-  padding: 9px 10px;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  background: var(--panel-strong);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   color: var(--muted);
   white-space: pre-wrap;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
@@ -746,18 +741,11 @@ textarea:focus {
   }
 
   .workbench {
-    grid-template-columns: 1fr;
     overflow: auto;
   }
 
-  .input-pane {
-    min-height: 520px;
-    border-right: 0;
-    border-bottom: 1px solid var(--border);
-  }
-
   .input-toolbar,
-  .pane-header {
+  .import-console-header {
     align-items: stretch;
     flex-direction: column;
   }

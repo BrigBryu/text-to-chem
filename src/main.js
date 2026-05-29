@@ -87,6 +87,7 @@ app.innerHTML = `
       <div class="topbar-actions">
         <span id="parseStatus"></span>
         <span id="profileStatus" class="profile-status"></span>
+        <button id="importPackage" type="button" title="Paste molecule-card package">Import package</button>
         <button id="profileSettings" type="button" title="Rendering profile">Profile</button>
         <button id="copyPrompt" type="button" title="Copy base molecule-card prompt">Card prompt</button>
         <button id="copyArrowPrompt" type="button" title="Copy arrow syntax add-on">Arrow add-on</button>
@@ -95,38 +96,7 @@ app.innerHTML = `
     <nav class="source-tabs-bar" aria-label="Imported source tabs">
       <div id="sourceTabs" class="source-tabs"></div>
     </nav>
-    <section class="workbench" aria-label="Import and render workbench">
-      <section class="input-pane" aria-label="Molecule-card source">
-        <div class="pane-header">
-          <div>
-            <strong>Import console</strong>
-            <span id="importStatus"></span>
-          </div>
-          <span class="shortcut-hint">Cmd/Ctrl+Enter renders</span>
-        </div>
-        <textarea id="sourceInput" spellcheck="false" aria-label="Molecule block input"></textarea>
-        <div class="input-toolbar">
-          <label class="new-tab-option">
-            <input id="openInNewTab" type="checkbox" />
-            <span>Open in new tab</span>
-          </label>
-          <div class="input-actions">
-            <button id="clearSource" type="button" title="Clear source input">Clear</button>
-            <button id="resetDemo" type="button" title="Load example source">Example</button>
-            <button id="applyImport" type="button" title="Render source (Cmd/Ctrl+Enter)">Render</button>
-          </div>
-        </div>
-        <details id="shortcutsPanel" class="shortcuts-panel">
-          <summary>Shortcuts</summary>
-          <dl>
-            <div><dt>Cmd/Ctrl+Enter</dt><dd>Render source</dd></div>
-            <div><dt>Cmd/Ctrl+L</dt><dd>Focus import console</dd></div>
-            <div><dt>Cmd/Ctrl+/</dt><dd>Toggle shortcuts</dd></div>
-            <div><dt>Esc</dt><dd>Close profile panel</dd></div>
-          </dl>
-        </details>
-        <div id="statusLog" class="status-log" aria-live="polite"></div>
-      </section>
+    <section class="workbench" aria-label="Render workbench">
       <section class="output-pane" aria-live="polite" aria-label="Rendered molecule cards">
         <div class="output-bar">
           <strong>Rendered cards</strong>
@@ -137,9 +107,44 @@ app.innerHTML = `
     </section>
     <footer class="bottom-status" aria-live="polite">
       <span id="flowStatus">Ready</span>
-      <span>Import -> Render -> Review -> SVG/PNG</span>
+      <span id="statusLog" class="status-log">Import package -> Review -> SVG/PNG</span>
     </footer>
   </main>
+  <dialog id="importDialog" aria-labelledby="importTitle">
+    <form method="dialog" class="import-panel">
+      <div class="import-heading">
+        <div>
+          <h2 id="importTitle">Import molecule package</h2>
+          <p>Paste molecule-card text here. After import, the source closes and the app shows rendered chemistry only.</p>
+        </div>
+        <button id="cancelImport" type="button" aria-label="Close import panel">Close</button>
+      </div>
+      <div class="import-console-header">
+        <strong>Package source</strong>
+        <span id="importStatus">0 molecules</span>
+      </div>
+      <textarea id="sourceInput" spellcheck="false" aria-label="Molecule package input"></textarea>
+      <div class="input-toolbar">
+        <label class="new-tab-option">
+          <input id="openInNewTab" type="checkbox" />
+          <span>Open in new tab</span>
+        </label>
+        <div class="input-actions">
+          <button id="clearSource" type="button" title="Clear import input">Clear</button>
+          <button id="resetDemo" type="button" title="Load example package">Example</button>
+          <button id="applyImport" type="button" title="Import and render package (Cmd/Ctrl+Enter)">Import</button>
+        </div>
+      </div>
+      <details id="shortcutsPanel" class="shortcuts-panel">
+        <summary>Shortcuts</summary>
+        <dl>
+          <div><dt>Cmd/Ctrl+Enter</dt><dd>Import package when this panel is open</dd></div>
+          <div><dt>Cmd/Ctrl+/</dt><dd>Toggle shortcuts</dd></div>
+          <div><dt>Esc</dt><dd>Close open panel</dd></div>
+        </dl>
+      </details>
+    </form>
+  </dialog>
   <dialog id="settingsDialog" aria-labelledby="settingsTitle">
     <form method="dialog" class="settings-panel">
       <div class="import-heading">
@@ -187,12 +192,15 @@ const statusLog = document.querySelector("#statusLog");
 const flowStatus = document.querySelector("#flowStatus");
 const shortcutsPanel = document.querySelector("#shortcutsPanel");
 const sourceTabs = document.querySelector("#sourceTabs");
+const importDialog = document.querySelector("#importDialog");
 const settingsDialog = document.querySelector("#settingsDialog");
+const importPackage = document.querySelector("#importPackage");
 const profileSettings = document.querySelector("#profileSettings");
 const openInNewTab = document.querySelector("#openInNewTab");
 const copyPrompt = document.querySelector("#copyPrompt");
 const copyArrowPrompt = document.querySelector("#copyArrowPrompt");
 const closeSettings = document.querySelector("#closeSettings");
+const cancelImport = document.querySelector("#cancelImport");
 const applyImport = document.querySelector("#applyImport");
 const clearSource = document.querySelector("#clearSource");
 const resetDemo = document.querySelector("#resetDemo");
@@ -204,7 +212,7 @@ let activeTabId = loadActiveTabId(tabs);
 let renderSettings = loadRenderSettings();
 let importPreferences = loadImportPreferences();
 
-input.value = getActiveTab()?.source || DEFAULT_INPUT;
+input.value = "";
 openInNewTab.checked = importPreferences.openInNewTab;
 syncSettingsUi();
 updateProfileStatus();
@@ -237,6 +245,13 @@ openInNewTab.addEventListener("change", () => {
 
 profileSettings.addEventListener("click", () => settingsDialog.showModal());
 closeSettings.addEventListener("click", () => settingsDialog.close());
+importPackage.addEventListener("click", () => {
+  input.value = "";
+  updateImportStatus();
+  importDialog.showModal();
+  input.focus();
+});
+cancelImport.addEventListener("click", () => importDialog.close());
 
 settingsDialog.addEventListener("change", (event) => {
   if (event.target.name !== "renderMode") {
@@ -336,16 +351,14 @@ resetDemo.addEventListener("click", () => {
 
 document.addEventListener("keydown", (event) => {
   const modifier = event.metaKey || event.ctrlKey;
-  if (modifier && event.key === "Enter") {
+  if (modifier && event.key === "Enter" && importDialog.open) {
     event.preventDefault();
     applyImportedSource();
-  } else if (modifier && event.key.toLowerCase() === "l") {
-    event.preventDefault();
-    input.focus();
-    input.select();
-  } else if (modifier && event.key === "/") {
+  } else if (modifier && event.key === "/" && importDialog.open) {
     event.preventDefault();
     shortcutsPanel.open = !shortcutsPanel.open;
+  } else if (event.key === "Escape" && importDialog.open) {
+    importDialog.close();
   } else if (event.key === "Escape" && settingsDialog.open) {
     settingsDialog.close();
   }
@@ -360,8 +373,10 @@ function updateImportStatus() {
   importStatus.textContent = countText;
   const parseWarningCount = mols.reduce((sum, mol) => sum + (mol.parseWarnings?.length || 0), 0);
   if (mols.length === 0) {
-    statusLog.textContent = "No ::mol blocks found in the import console.";
-    flowStatus.textContent = "Waiting for source";
+    if (importDialog.open) {
+      statusLog.textContent = "No ::mol blocks found in the import package.";
+      flowStatus.textContent = "Waiting for import";
+    }
   } else if (parseWarningCount > 0) {
     statusLog.textContent = `${parseWarningCount} parse warning${parseWarningCount === 1 ? "" : "s"} before render. Render to see card details.`;
     flowStatus.textContent = "Warnings";
@@ -373,6 +388,13 @@ function updateImportStatus() {
 
 function applyImportedSource() {
   const source = input.value;
+  const mols = parseMolBlocks(source);
+  if (mols.length === 0) {
+    statusLog.textContent = "Import failed: no ::mol blocks found.";
+    flowStatus.textContent = "Import failed";
+    return;
+  }
+
   importPreferences.openInNewTab = openInNewTab.checked;
   saveImportPreferences();
 
@@ -389,7 +411,7 @@ function applyImportedSource() {
   inputVersion += 1;
   saveTabs();
   renderTabs();
-  syncInputFromActiveTab();
+  closeImportPanel();
   renderFromInput();
 }
 
@@ -462,8 +484,7 @@ function setActiveTab(tabId) {
   inputVersion += 1;
   saveTabs();
   renderTabs();
-  syncInputFromActiveTab();
-  updateImportStatus();
+  closeImportPanel();
   renderFromInput();
 }
 
@@ -482,13 +503,16 @@ function closeTab(tabId) {
   inputVersion += 1;
   saveTabs();
   renderTabs();
-  syncInputFromActiveTab();
-  updateImportStatus();
+  closeImportPanel();
   renderFromInput();
 }
 
-function syncInputFromActiveTab() {
-  input.value = getActiveTab()?.source || "";
+function closeImportPanel() {
+  input.value = "";
+  updateImportStatus();
+  if (importDialog.open) {
+    importDialog.close();
+  }
 }
 
 function getActiveTab() {
