@@ -84,16 +84,14 @@ app.innerHTML = `
     <section class="topbar" aria-label="Import controls">
       <div class="brand-block">
         <img src="${import.meta.env.BASE_URL}logo.svg" alt="" aria-hidden="true" />
-        <div>
+        <div class="brand-copy">
           <h1>Text to Chem</h1>
-          <p>Browser-only renderer: no account, paste structured molecule blocks, not a full chemistry editor.</p>
+          <button id="profileSettings" type="button" title="Rendering settings">Settings</button>
         </div>
       </div>
       <div class="topbar-actions">
-        <span id="parseStatus"></span>
-        <span id="profileStatus" class="profile-status"></span>
         <button id="importPackage" type="button" title="Paste molecule-card package">Import package</button>
-        <button id="profileSettings" type="button" title="Rendering profile">Profile</button>
+        <button id="copyPackage" type="button" title="Copy the active molecule-card package">Copy package</button>
         <button id="copyPrompt" type="button" title="Copy base molecule-card prompt">Card prompt</button>
         <button id="copyArrowPrompt" type="button" title="Copy arrow syntax add-on">Arrow add-on</button>
       </div>
@@ -198,8 +196,6 @@ app.innerHTML = `
 
 const input = document.querySelector("#sourceInput");
 const cards = document.querySelector("#cards");
-const parseStatus = document.querySelector("#parseStatus");
-const profileStatus = document.querySelector("#profileStatus");
 const importStatus = document.querySelector("#importStatus");
 const statusLog = document.querySelector("#statusLog");
 const flowStatus = document.querySelector("#flowStatus");
@@ -210,6 +206,7 @@ const settingsDialog = document.querySelector("#settingsDialog");
 const importPackage = document.querySelector("#importPackage");
 const profileSettings = document.querySelector("#profileSettings");
 const openInNewTab = document.querySelector("#openInNewTab");
+const copyPackage = document.querySelector("#copyPackage");
 const copyPrompt = document.querySelector("#copyPrompt");
 const copyArrowPrompt = document.querySelector("#copyArrowPrompt");
 const closeSettings = document.querySelector("#closeSettings");
@@ -231,7 +228,6 @@ initAnalytics();
 input.value = "";
 openInNewTab.checked = importPreferences.openInNewTab;
 syncSettingsUi();
-updateProfileStatus();
 updateImportStatus();
 
 input.addEventListener("input", () => {
@@ -286,7 +282,6 @@ settingsDialog.addEventListener("change", (event) => {
   }
 
   saveRenderSettings();
-  updateProfileStatus();
   trackUsageEvent("profile-changed", event.target.name === "renderMode" ? event.target.value : "export-controls");
   inputVersion += 1;
   renderFromInput();
@@ -370,6 +365,22 @@ copyArrowPrompt.addEventListener("click", async () => {
   await copyPromptText(copyArrowPrompt, ARROW_LLM_PROMPT, "Copy arrow add-on");
 });
 
+copyPackage.addEventListener("click", async () => {
+  const source = getActiveTab()?.source || "";
+  if (!source.trim()) {
+    flashButton(copyPackage, "Empty");
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(source);
+    trackUsageEvent("package-copied");
+    flashButton(copyPackage, "Copied");
+  } catch {
+    flashButton(copyPackage, "Failed");
+  }
+});
+
 resetDemo.addEventListener("click", () => {
   input.value = DEFAULT_INPUT;
   updateImportStatus();
@@ -450,7 +461,6 @@ async function renderFromInput() {
   const sequence = ++renderSequence;
   const version = inputVersion;
   const mols = getActiveMols();
-  parseStatus.textContent = `${mols.length} molecule${mols.length === 1 ? "" : "s"}`;
 
   if (mols.length === 0) {
     cards.innerHTML = `<div class="empty-state">No molecule blocks found.</div>`;
@@ -654,15 +664,6 @@ function syncSettingsUi() {
     inputElement.checked = inputElement.value === renderSettings.renderMode;
   });
   showExportActions.checked = renderSettings.showExportActions;
-}
-
-function updateProfileStatus() {
-  const labels = {
-    line: "Line drawing",
-    lewis: "Condensed C/H",
-    expandedHydrogens: "Expanded H bonds"
-  };
-  profileStatus.textContent = labels[renderSettings.renderMode] || labels.line;
 }
 
 function createTab(source, fallbackTitle = "") {
