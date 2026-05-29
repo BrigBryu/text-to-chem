@@ -81,56 +81,65 @@ app.innerHTML = `
   <main class="app-shell">
     <section class="topbar" aria-label="Import controls">
       <div class="brand-block">
-        <h1>Chem Note Renderer</h1>
-        <p>Rendered organic chemistry cards from structured LLM text.</p>
+        <h1>Text to Chem</h1>
+        <p>Import molecule-card text, render notes, export clean structures.</p>
       </div>
       <div class="topbar-actions">
         <span id="parseStatus"></span>
         <span id="profileStatus" class="profile-status"></span>
-        <button id="importSource" type="button">Import</button>
-        <button id="editSource" type="button">Edit source</button>
-        <button id="profileSettings" type="button">Profile</button>
-        <button id="copyPrompt" type="button">Copy card prompt</button>
-        <button id="copyArrowPrompt" type="button">Copy arrow add-on</button>
+        <button id="profileSettings" type="button" title="Rendering profile">Profile</button>
+        <button id="copyPrompt" type="button" title="Copy base molecule-card prompt">Card prompt</button>
+        <button id="copyArrowPrompt" type="button" title="Copy arrow syntax add-on">Arrow add-on</button>
       </div>
     </section>
     <nav class="source-tabs-bar" aria-label="Imported source tabs">
       <div id="sourceTabs" class="source-tabs"></div>
     </nav>
-    <section class="output-pane" aria-live="polite" aria-label="Rendered molecule cards">
-      <div class="output-bar">
-        <strong>Rendered cards</strong>
-        <span id="outputStatus"></span>
-      </div>
-      <div id="cards" class="cards"></div>
-    </section>
-  </main>
-  <dialog id="importDialog" aria-labelledby="importTitle">
-    <form method="dialog" class="import-panel">
-      <div class="import-heading">
-        <div>
-          <h2 id="importTitle">Import molecule cards</h2>
-          <p>Paste the structured text from an LLM, then render it into clean cards.</p>
+    <section class="workbench" aria-label="Import and render workbench">
+      <section class="input-pane" aria-label="Molecule-card source">
+        <div class="pane-header">
+          <div>
+            <strong>Import console</strong>
+            <span id="importStatus"></span>
+          </div>
+          <span class="shortcut-hint">Cmd/Ctrl+Enter renders</span>
         </div>
-        <button id="closeImport" type="button" aria-label="Close import panel">Close</button>
-      </div>
-      <textarea id="sourceInput" spellcheck="false" aria-label="Molecule block input"></textarea>
-      <div class="import-footer">
-        <div class="import-options">
+        <textarea id="sourceInput" spellcheck="false" aria-label="Molecule block input"></textarea>
+        <div class="input-toolbar">
           <label class="new-tab-option">
             <input id="openInNewTab" type="checkbox" />
             <span>Open in new tab</span>
           </label>
-          <span id="importStatus"></span>
+          <div class="input-actions">
+            <button id="clearSource" type="button" title="Clear source input">Clear</button>
+            <button id="resetDemo" type="button" title="Load example source">Example</button>
+            <button id="applyImport" type="button" title="Render source (Cmd/Ctrl+Enter)">Render</button>
+          </div>
         </div>
-        <div class="import-actions">
-          <button id="clearSource" type="button">Clear</button>
-          <button id="resetDemo" type="button">Demo</button>
-          <button id="applyImport" value="default">Render cards</button>
+        <details id="shortcutsPanel" class="shortcuts-panel">
+          <summary>Shortcuts</summary>
+          <dl>
+            <div><dt>Cmd/Ctrl+Enter</dt><dd>Render source</dd></div>
+            <div><dt>Cmd/Ctrl+L</dt><dd>Focus import console</dd></div>
+            <div><dt>Cmd/Ctrl+/</dt><dd>Toggle shortcuts</dd></div>
+            <div><dt>Esc</dt><dd>Close profile panel</dd></div>
+          </dl>
+        </details>
+        <div id="statusLog" class="status-log" aria-live="polite"></div>
+      </section>
+      <section class="output-pane" aria-live="polite" aria-label="Rendered molecule cards">
+        <div class="output-bar">
+          <strong>Rendered cards</strong>
+          <span id="outputStatus"></span>
         </div>
-      </div>
-    </form>
-  </dialog>
+        <div id="cards" class="cards"></div>
+      </section>
+    </section>
+    <footer class="bottom-status" aria-live="polite">
+      <span id="flowStatus">Ready</span>
+      <span>Import -> Render -> Review -> SVG/PNG</span>
+    </footer>
+  </main>
   <dialog id="settingsDialog" aria-labelledby="settingsTitle">
     <form method="dialog" class="settings-panel">
       <div class="import-heading">
@@ -174,17 +183,15 @@ const parseStatus = document.querySelector("#parseStatus");
 const profileStatus = document.querySelector("#profileStatus");
 const importStatus = document.querySelector("#importStatus");
 const outputStatus = document.querySelector("#outputStatus");
+const statusLog = document.querySelector("#statusLog");
+const flowStatus = document.querySelector("#flowStatus");
+const shortcutsPanel = document.querySelector("#shortcutsPanel");
 const sourceTabs = document.querySelector("#sourceTabs");
-const importDialog = document.querySelector("#importDialog");
 const settingsDialog = document.querySelector("#settingsDialog");
-const importSource = document.querySelector("#importSource");
-const editSource = document.querySelector("#editSource");
 const profileSettings = document.querySelector("#profileSettings");
-const importTitle = document.querySelector("#importTitle");
 const openInNewTab = document.querySelector("#openInNewTab");
 const copyPrompt = document.querySelector("#copyPrompt");
 const copyArrowPrompt = document.querySelector("#copyArrowPrompt");
-const closeImport = document.querySelector("#closeImport");
 const closeSettings = document.querySelector("#closeSettings");
 const applyImport = document.querySelector("#applyImport");
 const clearSource = document.querySelector("#clearSource");
@@ -198,11 +205,29 @@ let renderSettings = loadRenderSettings();
 let importPreferences = loadImportPreferences();
 
 input.value = getActiveTab()?.source || DEFAULT_INPUT;
+openInNewTab.checked = importPreferences.openInNewTab;
 syncSettingsUi();
 updateProfileStatus();
+updateImportStatus();
 
 input.addEventListener("input", () => {
   updateImportStatus();
+});
+
+input.addEventListener("dragover", (event) => {
+  event.preventDefault();
+});
+
+input.addEventListener("drop", async (event) => {
+  event.preventDefault();
+  const file = event.dataTransfer?.files?.[0];
+  if (file) {
+    input.value = await file.text();
+  } else {
+    input.value = event.dataTransfer?.getData("text/plain") || input.value;
+  }
+  updateImportStatus();
+  flowStatus.textContent = "Source loaded";
 });
 
 openInNewTab.addEventListener("change", () => {
@@ -210,14 +235,8 @@ openInNewTab.addEventListener("change", () => {
   saveImportPreferences();
 });
 
-importSource.addEventListener("click", () => openImportDialog({ mode: "import" }));
-editSource.addEventListener("click", () => openImportDialog({ mode: "edit" }));
 profileSettings.addEventListener("click", () => settingsDialog.showModal());
-closeImport.addEventListener("click", () => importDialog.close());
 closeSettings.addEventListener("click", () => settingsDialog.close());
-importDialog.addEventListener("close", () => {
-  outputStatus.textContent = getActiveMols().length ? outputStatus.textContent : "";
-});
 
 settingsDialog.addEventListener("change", (event) => {
   if (event.target.name !== "renderMode") {
@@ -237,12 +256,12 @@ settingsDialog.addEventListener("change", (event) => {
 applyImport.addEventListener("click", (event) => {
   event.preventDefault();
   applyImportedSource();
-  importDialog.close();
 });
 
 clearSource.addEventListener("click", () => {
   input.value = "";
   updateImportStatus();
+  flowStatus.textContent = "Cleared";
   input.focus();
 });
 
@@ -312,36 +331,44 @@ copyArrowPrompt.addEventListener("click", async () => {
 resetDemo.addEventListener("click", () => {
   input.value = DEFAULT_INPUT;
   updateImportStatus();
+  flowStatus.textContent = "Example loaded";
+});
+
+document.addEventListener("keydown", (event) => {
+  const modifier = event.metaKey || event.ctrlKey;
+  if (modifier && event.key === "Enter") {
+    event.preventDefault();
+    applyImportedSource();
+  } else if (modifier && event.key.toLowerCase() === "l") {
+    event.preventDefault();
+    input.focus();
+    input.select();
+  } else if (modifier && event.key === "/") {
+    event.preventDefault();
+    shortcutsPanel.open = !shortcutsPanel.open;
+  } else if (event.key === "Escape" && settingsDialog.open) {
+    settingsDialog.close();
+  }
 });
 
 renderTabs();
 renderFromInput();
 
-function openImportDialog(options = {}) {
-  if (options.mode === "import") {
-    importTitle.textContent = "Import molecule cards";
-    input.value = "";
-    openInNewTab.checked = importPreferences.openInNewTab;
-  } else {
-    importTitle.textContent = "Edit source";
-    input.value = getActiveTab()?.source || "";
-    openInNewTab.checked = importPreferences.openInNewTab;
-  }
-
-  updateImportStatus();
-  importDialog.showModal();
-  window.setTimeout(() => {
-    input.focus();
-    if (options.mode === "edit") {
-      input.select();
-    }
-  }, 0);
-}
-
 function updateImportStatus() {
   const mols = parseMolBlocks(input.value);
   const countText = `${mols.length} molecule${mols.length === 1 ? "" : "s"}`;
   importStatus.textContent = countText;
+  const parseWarningCount = mols.reduce((sum, mol) => sum + (mol.parseWarnings?.length || 0), 0);
+  if (mols.length === 0) {
+    statusLog.textContent = "No ::mol blocks found in the import console.";
+    flowStatus.textContent = "Waiting for source";
+  } else if (parseWarningCount > 0) {
+    statusLog.textContent = `${parseWarningCount} parse warning${parseWarningCount === 1 ? "" : "s"} before render. Render to see card details.`;
+    flowStatus.textContent = "Warnings";
+  } else {
+    statusLog.textContent = `Ready to render ${countText}.`;
+    flowStatus.textContent = "Ready";
+  }
 }
 
 function applyImportedSource() {
@@ -362,6 +389,7 @@ function applyImportedSource() {
   inputVersion += 1;
   saveTabs();
   renderTabs();
+  syncInputFromActiveTab();
   renderFromInput();
 }
 
@@ -375,6 +403,7 @@ async function renderFromInput() {
   if (mols.length === 0) {
     cards.innerHTML = `<div class="empty-state">No molecule blocks found.</div>`;
     outputStatus.textContent = "";
+    flowStatus.textContent = "No cards";
     return;
   }
 
@@ -391,7 +420,14 @@ async function renderFromInput() {
   cards.innerHTML = "";
   renderedCards.forEach((card) => fragments.appendChild(card));
   cards.appendChild(fragments);
+  const warningTexts = Array.from(cards.querySelectorAll(".annotation-warning"))
+    .map((warning) => warning.dataset.warningText)
+    .filter(Boolean);
   outputStatus.textContent = `${mols.length} ready`;
+  flowStatus.textContent = warningTexts.length ? `${warningTexts.length} warning${warningTexts.length === 1 ? "" : "s"}` : "Rendered";
+  statusLog.textContent = warningTexts.length
+    ? warningTexts.join("\n\n")
+    : `Rendered ${mols.length} molecule card${mols.length === 1 ? "" : "s"} without warnings.`;
 }
 
 function renderTabs() {
@@ -426,6 +462,8 @@ function setActiveTab(tabId) {
   inputVersion += 1;
   saveTabs();
   renderTabs();
+  syncInputFromActiveTab();
+  updateImportStatus();
   renderFromInput();
 }
 
@@ -444,7 +482,13 @@ function closeTab(tabId) {
   inputVersion += 1;
   saveTabs();
   renderTabs();
+  syncInputFromActiveTab();
+  updateImportStatus();
   renderFromInput();
+}
+
+function syncInputFromActiveTab() {
+  input.value = getActiveTab()?.source || "";
 }
 
 function getActiveTab() {
