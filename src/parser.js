@@ -127,13 +127,13 @@ function parseArrowLine(line, mol) {
     return;
   }
 
-    mol.arrows.push({
-      from: match[1].trim(),
-      to: match[2].trim(),
-      curve: match[3]?.toLowerCase() || "auto",
-      raw: cleanLine
-    });
-  }
+  mol.arrows.push({
+    from: match[1].trim(),
+    to: match[2].trim(),
+    curve: match[3]?.toLowerCase() || "auto",
+    raw: cleanLine
+  });
+}
 
 function resolveAliases(mol) {
   mol.lonepairs = resolveAnnotationAliases(mol.lonepairs, mol.aliases);

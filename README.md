@@ -1,4 +1,4 @@
-# Chem Note Renderer
+# Text to Chem
 
 A small local-only chemistry note renderer for organic chemistry studying. Import `::mol` blocks with valid SMILES plus manual annotations, and the app renders molecule cards with lone-pair dots, formal charges, arrows, and captions.
 
@@ -18,6 +18,12 @@ You can also build static files:
 ```bash
 npm run build
 npm run preview
+```
+
+Run the test/build verification pass:
+
+```bash
+npm run verify
 ```
 
 ## Input Syntax
@@ -46,11 +52,47 @@ Atom references use element order in the rendered molecule:
 
 Dot-separated SMILES fragments such as `C[NH3+].[Cl-]` are rendered as separated components inside one card. Manual annotations still use element order across the whole card.
 
+For OWL-style screenshot mapping, optional aliases can stand in for atom refs:
+
+```text
+aliases:
+  topLeftC: C4
+  bottomLeftC: C5
+  oxygen: O1
+charges:
+  topLeftC: +
+arrows:
+  topLeftC-bottomLeftC -> bottomLeftC-oxygen curve: right
+```
+
+Aliases are resolved before rendering charges, lone pairs, layout, and arrows.
+
+Set `show_atom_labels: true` to render small `C1`, `C2`, `O1` labels next to atoms:
+
+```text
+show_atom_labels: true
+```
+
+To keep resonance cards aligned, reuse an earlier card's rendered positions:
+
+```text
+layout_from: Starting structure
+```
+
+For rough screenshot orientation, provide simple manual coordinates. These are not editor coordinates; they are just layout hints.
+
+```text
+layout:
+  C1: [0, 0]
+  C2: [1, 0]
+  O1: [0, 1]
+```
+
 Arrow endpoints are manual references:
 
 - `O1.lp1` means the first lone-pair annotation on `O1`.
 - `O1` means the atom anchor for `O1`.
-- `C1-O1` means the bond midpoint between `C1` and `O1`.
+- `C1-O1` means the rendered bond between `C1` and `O1`.
 - `N1-H1` means the approximate first hydrogen attached to `N1` when hydrogens are implicit in labels such as `NH3`.
 
 Optional curve hints are supported:
@@ -78,7 +120,9 @@ Exports include the molecule drawing and manual annotations on an off-white back
 - Atom references are resolved by element order only.
 - Lone-pair placement is simple radial placement, optimized for readability rather than strict chemical geometry.
 - If an atom reference cannot be resolved, the card shows an unresolved annotation warning.
-- Arrow endpoints must reference atoms, lone pairs, or bonds that can be resolved from the rendered card.
+- Arrow endpoints must reference atoms, lone pairs, or rendered bonds that can be resolved from the card. Failed arrow warnings list available atoms and bonds.
+- `layout` and `layout_from` are lightweight orientation aids, not a full coordinate editor.
+- Expanded implicit hydrogens are display overlays based on SmilesDrawer hydrogen counts.
 
 ## LLM Prompts
 

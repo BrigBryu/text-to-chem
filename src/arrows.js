@@ -14,19 +14,19 @@ export function drawArrows(svg, arrows, anchorRegistry) {
   });
   const markerId = ensureArrowMarker(svg);
 
-    arrows.forEach((arrow, index) => {
-      const from = resolveArrowEndpoint(arrow.from, anchorRegistry);
-      const to = resolveArrowEndpoint(arrow.to, anchorRegistry);
+  arrows.forEach((arrow, index) => {
+    const from = resolveArrowEndpoint(arrow.from, anchorRegistry);
+    const to = resolveArrowEndpoint(arrow.to, anchorRegistry);
 
-      if (!from || !to) {
-        if (!from) {
-          unresolved.push(arrow.from);
-        }
-        if (!to) {
-          unresolved.push(arrow.to);
-        }
-        return;
+    if (!from || !to) {
+      if (!from) {
+        unresolved.push(arrow.from);
       }
+      if (!to) {
+        unresolved.push(arrow.to);
+      }
+      return;
+    }
 
     layer.appendChild(drawCurvedArrow(from, to, {
       markerId,

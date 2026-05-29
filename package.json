@@ -1,11 +1,13 @@
 {
-  "name": "chem-note-renderer",
+  "name": "text-to-chem",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "vite build",
+    "test": "node --test",
+    "verify": "npm test && npm run build",
     "preview": "vite preview --host 127.0.0.1"
   },
   "dependencies": {
