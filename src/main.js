@@ -5,27 +5,27 @@ import "./styles.css";
 
 export const DEFAULT_INPUT = `::mol
 title: Starting structure
-smiles: O=C1[C-]C=CCC1
+smiles: O=C1[C-]CCCC1
 lonepairs:
   O1: 2
   C2: 1
 charges:
   C2: -
 arrows:
-  C2.lp1 -> C1-O1
-  C1-O1 -> O1
-caption: The negative charge is on the alpha carbon next to the carbonyl.
+  C2.lp1 -> C1-C2 curve: left
+  C1-O1 -> O1 curve: right
+caption: The carbon lone pair forms the new C=C pi bond to the carbonyl carbon, and the C=O pi electrons move onto oxygen.
 
 ::mol
 title: Resonance form
-smiles: [O-]C1=C([H])C=CCC1
+smiles: [O-]C1=CCCCC1
 lonepairs:
   O1: 3
 charges:
   O1: -
-arrows:
-  O1.lp1 -> C1
-caption: The carbon lone pair forms C=C, and the C=O pi electrons move to oxygen.`;
+caption: The negative charge is now on oxygen, and the carbon with a lone pair originally is double-bonded to the former carbonyl carbon.`;
+
+const OLD_DEMO_SIGNATURE = "smiles: O=C1[C-]C=CCC1";
 
 export const GENERAL_LLM_PROMPT = `Format organic chemistry structures as molecule cards in this exact format. Use valid SMILES. Include lone pairs and formal charges as manual annotations, not inferred chemistry.
 
@@ -69,7 +69,8 @@ const LEGACY_INPUT_STORAGE_KEY = "chem-note-input";
 const RENDER_SETTINGS_STORAGE_KEY = "chem-note-render-settings";
 const IMPORT_PREFERENCES_STORAGE_KEY = "chem-note-import-preferences";
 const DEFAULT_RENDER_SETTINGS = {
-  renderMode: "line"
+  renderMode: "line",
+  showExportActions: false
 };
 const DEFAULT_IMPORT_PREFERENCES = {
   openInNewTab: true
@@ -106,7 +107,7 @@ app.innerHTML = `
     </section>
     <footer class="bottom-status" aria-live="polite">
       <span id="flowStatus">Ready</span>
-      <span id="statusLog" class="status-log">Import package -> Review -> SVG/PNG</span>
+      <span id="statusLog" class="status-log">Import package -> Review cards</span>
     </footer>
   </main>
   <dialog id="importDialog" aria-labelledby="importTitle">
@@ -177,6 +178,16 @@ app.innerHTML = `
           </span>
         </label>
       </fieldset>
+      <fieldset class="settings-group">
+        <legend>Card controls</legend>
+        <label class="settings-check-option">
+          <input id="showExportActions" type="checkbox" />
+          <span>
+            <strong>Show SVG/PNG export buttons</strong>
+            <small>Adds export controls to each rendered molecule card.</small>
+          </span>
+        </label>
+      </fieldset>
     </form>
   </dialog>
 `;
@@ -203,6 +214,7 @@ const applyImport = document.querySelector("#applyImport");
 const clearSource = document.querySelector("#clearSource");
 const resetDemo = document.querySelector("#resetDemo");
 const renderModeInputs = Array.from(document.querySelectorAll("input[name='renderMode']"));
+const showExportActions = document.querySelector("#showExportActions");
 let renderSequence = 0;
 let inputVersion = 0;
 let tabs = loadTabs();
@@ -252,14 +264,20 @@ importPackage.addEventListener("click", () => {
 cancelImport.addEventListener("click", () => importDialog.close());
 
 settingsDialog.addEventListener("change", (event) => {
-  if (event.target.name !== "renderMode") {
+  if (event.target.name === "renderMode") {
+    renderSettings = normalizeRenderSettings({
+      ...renderSettings,
+      renderMode: event.target.value
+    });
+  } else if (event.target === showExportActions) {
+    renderSettings = normalizeRenderSettings({
+      ...renderSettings,
+      showExportActions: showExportActions.checked
+    });
+  } else {
     return;
   }
 
-  renderSettings = normalizeRenderSettings({
-    ...renderSettings,
-    renderMode: event.target.value
-  });
   saveRenderSettings();
   updateProfileStatus();
   inputVersion += 1;
@@ -528,14 +546,22 @@ function loadTabs() {
         .map((tab) => ({
           id: tab.id || makeTabId(),
           title: tab.title || makeTabTitle(tab.source),
-          source: tab.source
+          source: normalizeSavedSource(tab.source, tab.title)
         }));
     }
   } catch {
     // Fall through to legacy/default state.
   }
 
-  return [createTab(localStorage.getItem(LEGACY_INPUT_STORAGE_KEY) || DEFAULT_INPUT, "Demo")];
+  return [createTab(normalizeSavedSource(localStorage.getItem(LEGACY_INPUT_STORAGE_KEY) || DEFAULT_INPUT, "Demo"), "Demo")];
+}
+
+function normalizeSavedSource(source, title = "") {
+  if ((title === "Demo" || title === "Starting structure") && source.includes(OLD_DEMO_SIGNATURE)) {
+    return DEFAULT_INPUT;
+  }
+
+  return source;
 }
 
 function loadActiveTabId(tabList) {
@@ -587,7 +613,10 @@ function normalizeRenderSettings(settings) {
   return {
     ...DEFAULT_RENDER_SETTINGS,
     ...settings,
-    renderMode: validModes.has(settings?.renderMode) ? settings.renderMode : "line"
+    renderMode: validModes.has(settings?.renderMode) ? settings.renderMode : "line",
+    showExportActions: typeof settings?.showExportActions === "boolean"
+      ? settings.showExportActions
+      : DEFAULT_RENDER_SETTINGS.showExportActions
   };
 }
 
@@ -595,6 +624,7 @@ function syncSettingsUi() {
   renderModeInputs.forEach((inputElement) => {
     inputElement.checked = inputElement.value === renderSettings.renderMode;
   });
+  showExportActions.checked = renderSettings.showExportActions;
 }
 
 function updateProfileStatus() {

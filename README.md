@@ -69,16 +69,16 @@ The app includes a small web app manifest, SVG icon, and minimal service worker.
 ```text
 ::mol
 title: Starting structure
-smiles: O=C1[C-]C=CCC1
+smiles: O=C1[C-]CCCC1
 lonepairs:
   O1: 2
   C2: 1
 charges:
   C2: -
 arrows:
-  C2.lp1 -> C1-O1
-  C1-O1 -> O1
-caption: The negative charge is on the alpha carbon next to the carbonyl.
+  C2.lp1 -> C1-C2 curve: left
+  C1-O1 -> O1 curve: right
+caption: The carbon lone pair forms the new C=C pi bond to the carbonyl carbon, and the C=O pi electrons move onto oxygen.
 ```
 
 Atom references use element order in the rendered molecule:
@@ -143,7 +143,7 @@ arrows:
 
 ## Exports
 
-Each rendered card has:
+Enable `Show SVG/PNG export buttons` in Profile to add per-card export controls:
 
 - `SVG` for a clean molecule SVG download.
 - `PNG` for a high-resolution molecule PNG download.
@@ -162,6 +162,10 @@ Exports include the molecule drawing and manual annotations on an off-white back
 - Arrow endpoints must reference atoms, lone pairs, or rendered bonds that can be resolved from the card. Failed arrow warnings list available atoms and bonds.
 - `layout` and `layout_from` are lightweight orientation aids, not a full coordinate editor.
 - Expanded implicit hydrogens are display overlays based on SmilesDrawer hydrogen counts.
+
+## License
+
+Copyright (c) 2026 Bridger Brundy. All rights reserved. See [LICENSE](./LICENSE).
 
 ## LLM Prompts
 

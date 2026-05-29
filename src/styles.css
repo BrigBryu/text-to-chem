@@ -331,30 +331,47 @@ textarea:focus {
   cursor: pointer;
 }
 
-.render-mode-option:has(input:checked) {
+.settings-check-option {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel-strong);
+  cursor: pointer;
+}
+
+.render-mode-option:has(input:checked),
+.settings-check-option:has(input:checked) {
   border-color: var(--accent);
   background: var(--panel-soft);
 }
 
-.render-mode-option input {
+.render-mode-option input,
+.settings-check-option input {
   width: 16px;
   height: 16px;
   margin: 3px 0 0;
   accent-color: var(--accent-strong);
 }
 
-.render-mode-option span {
+.render-mode-option span,
+.settings-check-option span {
   display: grid;
   gap: 4px;
 }
 
-.render-mode-option strong {
+.render-mode-option strong,
+.settings-check-option strong {
   color: var(--text);
   font-size: 14px;
   line-height: 1.25;
 }
 
-.render-mode-option small {
+.render-mode-option small,
+.settings-check-option small {
   color: var(--muted);
   font-size: 12px;
   line-height: 1.4;

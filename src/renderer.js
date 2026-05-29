@@ -46,13 +46,18 @@ export async function renderMoleculeCard(molData, index, renderSettings = {}, re
 
   const body = document.createElement("div");
   body.className = "molecule-body";
-  body.innerHTML = `
-    <div class="card-heading">
-      <h2>${escapeHtml(molData.title || `Molecule ${index + 1}`)}</h2>
+  const actionsHtml = renderSettings.showExportActions
+    ? `
       <div class="card-actions" aria-label="Export actions">
         <button type="button" data-action="download-svg">SVG</button>
         <button type="button" data-action="download-png">PNG</button>
       </div>
+    `
+    : "";
+  body.innerHTML = `
+    <div class="card-heading">
+      <h2>${escapeHtml(molData.title || `Molecule ${index + 1}`)}</h2>
+      ${actionsHtml}
     </div>
     <p>${escapeHtml(molData.caption || "")}</p>
     <div class="annotation-warning" hidden></div>
