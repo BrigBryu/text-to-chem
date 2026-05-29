@@ -95,7 +95,21 @@ button:hover {
 }
 
 .brand-block {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
   min-width: 0;
+}
+
+.brand-block img {
+  display: block;
+  width: 54px;
+  height: 38px;
+  object-fit: contain;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--paper);
 }
 
 .brand-block h1 {

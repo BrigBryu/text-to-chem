@@ -82,8 +82,11 @@ app.innerHTML = `
   <main class="app-shell">
     <section class="topbar" aria-label="Import controls">
       <div class="brand-block">
-        <h1>Text to Chem</h1>
-        <p>Browser-only renderer: no account, paste structured molecule blocks, not a full chemistry editor.</p>
+        <img src="${import.meta.env.BASE_URL}logo.svg" alt="" aria-hidden="true" />
+        <div>
+          <h1>Text to Chem</h1>
+          <p>Browser-only renderer: no account, paste structured molecule blocks, not a full chemistry editor.</p>
+        </div>
       </div>
       <div class="topbar-actions">
         <span id="parseStatus"></span>
