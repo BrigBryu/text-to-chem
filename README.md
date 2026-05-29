@@ -6,7 +6,7 @@ Text to Chem is a small browser-based renderer for structured chemistry note pac
 
 ## Analytics
 
-Usage tracking is optional and uses GoatCounter when `VITE_GOATCOUNTER_ENDPOINT` is configured.
+Usage tracking is optional and uses GoatCounter when `VITE_GOATCOUNTER_ENDPOINT` is configured. This project is avalible for free and I created it to help myself with my classes tracking here lets me gauge how much time/how worth it is to keep this up and it is motivating cool to see if anyone at all uses anything that I worked on and then if so what do people use.
 
 The app tracks coarse product statistics only:
 
