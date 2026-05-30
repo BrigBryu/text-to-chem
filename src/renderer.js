@@ -34,9 +34,16 @@ export async function renderMoleculeCard(molData, index, renderSettings = {}, re
   const card = document.createElement("article");
   card.className = "molecule-card";
   card.dataset.title = molData.title || `Molecule ${index + 1}`;
+  card.dataset.cardIndex = String(index);
+
+  const cardNumber = document.createElement("span");
+  cardNumber.className = "card-number";
+  cardNumber.textContent = String(index + 1);
+  cardNumber.setAttribute("aria-label", `Card ${index + 1}`);
 
   const moleculeArea = document.createElement("div");
   moleculeArea.className = "molecule-area";
+  moleculeArea.appendChild(cardNumber);
 
   const svg = document.createElementNS(SVG_NS, "svg");
   svg.classList.add("molecule-svg");
@@ -46,18 +53,19 @@ export async function renderMoleculeCard(molData, index, renderSettings = {}, re
 
   const body = document.createElement("div");
   body.className = "molecule-body";
-  const actionsHtml = renderSettings.showExportActions
+  const exportActionsHtml = renderSettings.showExportActions
     ? `
-      <div class="card-actions" aria-label="Export actions">
         <button type="button" data-action="download-svg">SVG</button>
         <button type="button" data-action="download-png">PNG</button>
-      </div>
     `
     : "";
   body.innerHTML = `
     <div class="card-heading">
       <h2>${escapeHtml(molData.title || `Molecule ${index + 1}`)}</h2>
-      ${actionsHtml}
+      <div class="card-actions" aria-label="Card actions">
+        <button type="button" data-action="copy-card">Copy</button>
+        ${exportActionsHtml}
+      </div>
     </div>
     <p>${escapeHtml(molData.caption || "")}</p>
     <div class="annotation-warning" hidden></div>

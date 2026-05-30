@@ -52,6 +52,35 @@ body {
   color: var(--text);
 }
 
+.transparent-mode {
+  background: transparent;
+}
+
+.transparent-mode .topbar {
+  background: color-mix(in srgb, var(--panel) 85%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.transparent-mode .source-tabs-bar {
+  background: color-mix(in srgb, var(--panel-strong) 85%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.transparent-mode .workbench {
+  background:
+    linear-gradient(color-mix(in srgb, var(--workbench-overlay) 75%, transparent), color-mix(in srgb, var(--workbench-overlay) 75%, transparent)),
+    repeating-linear-gradient(0deg, transparent, transparent 23px, var(--workbench-grid) 24px);
+}
+
+.transparent-mode .molecule-card {
+  background: color-mix(in srgb, var(--paper) 92%, transparent);
+  backdrop-filter: blur(4px);
+}
+
+.transparent-mode .molecule-area {
+  background: color-mix(in srgb, var(--paper) 95%, transparent);
+}
+
 button,
 textarea {
   font: inherit;
@@ -87,58 +116,58 @@ button:hover {
   z-index: 5;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 14px;
+  justify-content: flex-start;
+  gap: 10px;
   padding: 8px 14px;
   background: var(--panel);
   border-bottom: 1px solid var(--border);
+  transition: padding 200ms ease;
 }
 
-.brand-block {
-  display: grid;
-  grid-template-columns: 48px minmax(0, auto);
-  gap: 9px;
-  align-items: center;
-  min-width: 0;
+.topbar.is-collapsed {
+  padding: 4px 14px;
 }
 
-.brand-block img {
-  display: block;
-  width: 48px;
-  height: 34px;
-  object-fit: contain;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  background: var(--paper);
+.topbar.is-collapsed .topbar-actions {
+  display: none;
 }
 
-.brand-copy {
+.topbar.is-collapsed:hover .topbar-actions {
+  display: flex;
+}
+
+.topbar-toggle {
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
-.brand-block h1 {
-  margin: 0;
-  font-size: 18px;
-  line-height: 1.15;
-  letter-spacing: 0;
-  white-space: nowrap;
-}
-
-.brand-copy button {
+  justify-content: center;
+  width: 28px;
   min-height: 28px;
-  padding: 0 9px;
-  background: var(--panel-strong);
-  font-size: 12px;
-  white-space: nowrap;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 150ms ease, transform 200ms ease;
+}
+
+.topbar-toggle:hover {
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.topbar-toggle svg {
+  transition: transform 200ms ease;
+}
+
+.topbar.is-collapsed .topbar-toggle svg {
+  transform: rotate(-90deg);
 }
 
 .topbar-actions {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 6px;
   color: var(--muted);
   font-size: 13px;
@@ -240,11 +269,15 @@ textarea:focus {
   width: min(920px, calc(100vw - 32px));
   max-height: calc(100vh - 40px);
   padding: 0;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--panel);
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background:
+    linear-gradient(var(--panel), var(--panel)) padding-box,
+    linear-gradient(135deg, var(--accent-strong) 0%, var(--border) 50%, var(--panel-soft) 100%) border-box;
   color: var(--text);
-  box-shadow: 0 28px 80px var(--dialog-shadow);
+  box-shadow:
+    0 4px 6px rgba(0, 0, 0, 0.1),
+    0 28px 80px var(--dialog-shadow);
 }
 
 #settingsDialog::backdrop,
@@ -334,10 +367,21 @@ textarea:focus {
   gap: 10px;
   align-items: flex-start;
   padding: 12px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: var(--panel-strong);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel-strong);
   cursor: pointer;
+  transition:
+    transform 150ms ease,
+    box-shadow 150ms ease,
+    border-color 150ms ease,
+    background 150ms ease;
+}
+
+.render-mode-option:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: var(--panel-soft);
 }
 
 .settings-check-option {
@@ -350,12 +394,25 @@ textarea:focus {
   border-radius: 8px;
   background: var(--panel-strong);
   cursor: pointer;
+  transition:
+    transform 150ms ease,
+    box-shadow 150ms ease,
+    border-color 150ms ease,
+    background 150ms ease;
+}
+
+.settings-check-option:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: var(--panel-soft);
 }
 
 .render-mode-option:has(input:checked),
 .settings-check-option:has(input:checked) {
   border-color: var(--accent);
   background: var(--panel-soft);
+  transform: none;
+  box-shadow: 0 0 0 2px var(--accent-ring);
 }
 
 .render-mode-option input,
@@ -381,6 +438,87 @@ textarea:focus {
 
 .render-mode-option small,
 .settings-check-option small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.theme-selector {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.theme-selector select {
+  flex: 1;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel-strong);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.theme-selector select:hover {
+  border-color: var(--panel-soft);
+}
+
+.theme-selector select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-ring);
+}
+
+.max-tabs-setting {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.max-tabs-setting input[type="range"] {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--panel-strong);
+  appearance: none;
+  cursor: pointer;
+}
+
+.max-tabs-setting input[type="range"]::-webkit-slider-thumb {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+  background: var(--panel);
+  appearance: none;
+  cursor: pointer;
+  transition: transform 150ms ease;
+}
+
+.max-tabs-setting input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+
+.max-tabs-setting span {
+  min-width: 28px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: var(--panel-strong);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.settings-hint {
+  display: block;
+  margin-top: 6px;
   color: var(--muted);
   font-size: 12px;
   line-height: 1.4;
@@ -474,20 +612,6 @@ textarea:focus {
   margin: 0;
 }
 
-.status-log {
-  min-height: 0;
-  max-height: 42px;
-  overflow: auto;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: var(--muted);
-  white-space: pre-wrap;
-  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-  font-size: 12px;
-  line-height: 1.35;
-}
 
 .output-pane {
   min-width: 0;
@@ -522,21 +646,6 @@ textarea:focus {
   margin: 0 auto;
 }
 
-.bottom-status {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 6px 16px;
-  border-top: 1px solid var(--border);
-  background: var(--panel-strong);
-  color: var(--muted);
-  font-size: 12px;
-}
-
-#flowStatus {
-  color: var(--text);
-  font-weight: 650;
-}
 
 .molecule-card {
   overflow: hidden;
@@ -548,12 +657,37 @@ textarea:focus {
 }
 
 .molecule-area {
+  position: relative;
   display: grid;
   place-items: center;
-    min-height: 300px;
-    padding: 16px;
-    background: var(--paper);
-    border-bottom: 1px solid var(--paper-line-soft);
+  min-height: 300px;
+  padding: 16px;
+  background: var(--paper);
+  border-bottom: 1px solid var(--paper-line-soft);
+}
+
+.card-number {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 13px;
+  font-weight: 700;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  opacity: 0.7;
+  transition: opacity 150ms ease;
+}
+
+.molecule-card:hover .card-number {
+  opacity: 1;
 }
 
 .molecule-area svg {
@@ -745,25 +879,53 @@ textarea:focus {
   margin: 0 auto;
 }
 
+.molecule-card.selected {
+  outline: 3px solid var(--accent);
+  outline-offset: -3px;
+}
+
+.molecule-card.selected .card-number {
+  background: var(--accent-strong);
+  color: var(--ink);
+  opacity: 1;
+}
+
+.vim-feedback {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  padding: 10px 18px;
+  border-radius: 6px;
+  background: var(--panel-ink);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  animation: vim-fade-in 150ms ease;
+}
+
+@keyframes vim-fade-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
 @media (max-width: 860px) {
   .topbar {
     position: static;
-    align-items: stretch;
-    flex-direction: column;
     padding: 12px;
-  }
-
-  .brand-block {
-    grid-template-columns: 48px minmax(0, 1fr);
-  }
-
-  .brand-copy {
-    justify-content: space-between;
   }
 
   .topbar-actions {
     justify-content: stretch;
-    flex-wrap: wrap;
   }
 
   .topbar-actions button {
@@ -800,10 +962,5 @@ textarea:focus {
 
   textarea {
     min-height: 320px;
-  }
-
-  .bottom-status {
-    flex-direction: column;
-    gap: 2px;
   }
 }

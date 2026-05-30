@@ -67,7 +67,12 @@ function drawCurvedArrow(fromAnchor, toAnchor, options) {
   const dy = end.y - start.y;
   const distance = Math.hypot(dx, dy) || 1;
   const normal = getCurveNormal(dx, dy, options.curve, options.index);
-  const curveAmount = Math.min(42, Math.max(18, distance * 0.24));
+  let curveAmount;
+  if (distance < 35) {
+    curveAmount = Math.max(12, distance * 0.5);
+  } else {
+    curveAmount = Math.min(42, Math.max(18, distance * 0.24));
+  }
   const control = {
     x: (start.x + end.x) / 2 + normal.x * curveAmount,
     y: (start.y + end.y) / 2 + normal.y * curveAmount

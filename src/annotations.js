@@ -20,12 +20,8 @@ export function resolveAtomRefs(molData, atoms) {
 export function drawAtomAnnotations(svg, atomRef, atom, annotations) {
   const lonePairCount = Math.max(0, Number.parseInt(annotations.lonePairs || 0, 10) || 0);
   const charge = normalizeCharge(annotations.charge);
-  const items = [
-    ...Array.from({ length: lonePairCount }, () => ({ type: "lonePair" })),
-    ...(charge ? [{ type: "charge", value: charge }] : [])
-  ];
 
-  if (items.length === 0) {
+  if (lonePairCount === 0 && !charge) {
     return new Map();
   }
 
@@ -34,34 +30,38 @@ export function drawAtomAnnotations(svg, atomRef, atom, annotations) {
     class: "chem-annotation chem-atom-annotations",
     "aria-hidden": "true"
   });
+  const scale = getAnnotationScale(atom);
 
-  const slots = getAnnotationSlots(atom, items.length);
-  items.forEach((item, index) => {
-    const slot = slots[index];
-    const scale = getAnnotationScale(atom);
+  const lonePairSlots = lonePairCount > 0 ? getAnnotationSlots(atom, lonePairCount) : [];
+  lonePairSlots.forEach((slot, index) => {
     const x = atom.x + slot.dx * scale;
     const y = atom.y + slot.dy * scale;
-    if (item.type === "lonePair") {
-      drawPair(group, x, y, slot.angle, scale);
-      const lonePairIndex = anchorsOfType(anchors, `${atomRef}.lp`) + 1;
-      anchors.set(`${atomRef}.lp${lonePairIndex}`, {
-        type: "lonePair",
-        x,
-        y,
-        angle: slot.angle,
-        atom
-      });
-    } else {
-      drawCharge(group, x, y, item.value, scale);
-      anchors.set(`${atomRef}.charge`, {
-        type: "charge",
-        x,
-        y,
-        angle: slot.angle,
-        atom
-      });
-    }
+    drawPair(group, x, y, slot.angle, scale);
+    const lonePairIndex = anchorsOfType(anchors, `${atomRef}.lp`) + 1;
+    anchors.set(`${atomRef}.lp${lonePairIndex}`, {
+      type: "lonePair",
+      x,
+      y,
+      angle: slot.angle,
+      atom
+    });
   });
+
+  if (charge) {
+    const chargeSlots = getAnnotationSlots(atom, 1, lonePairSlots);
+    const chargeSlot = chargeSlots[0];
+    const chargeRadiusMultiplier = lonePairCount > 0 ? 1.35 : 1;
+    const x = atom.x + chargeSlot.dx * scale * chargeRadiusMultiplier;
+    const y = atom.y + chargeSlot.dy * scale * chargeRadiusMultiplier;
+    drawCharge(group, x, y, charge, scale);
+    anchors.set(`${atomRef}.charge`, {
+      type: "charge",
+      x,
+      y,
+      angle: chargeSlot.angle,
+      atom
+    });
+  }
 
   svg.appendChild(group);
   return anchors;
@@ -108,7 +108,7 @@ function drawPair(group, x, y, angle, scale) {
   );
 }
 
-function getAnnotationSlots(atom, count) {
+function getAnnotationSlots(atom, count, excludeSlots = []) {
   const candidates = [
     slot(0, -28),
     slot(22, -22),
@@ -120,7 +120,35 @@ function getAnnotationSlots(atom, count) {
     slot(-22, -22)
   ];
 
-  return candidates
+  const threeSidesSlots = [
+    slot(0, -28),
+    slot(-30, 0),
+    slot(30, 0)
+  ];
+
+  const filteredCandidates = candidates.filter((candidate) =>
+    !excludeSlots.some((excluded) =>
+      Math.abs(candidate.dx - excluded.dx) < 5 && Math.abs(candidate.dy - excluded.dy) < 5
+    )
+  );
+
+  if (count >= 2 && excludeSlots.length === 0) {
+    const availableThreeSides = threeSidesSlots
+      .map((candidate) => ({
+        ...candidate,
+        score: scoreSlot(atom, candidate)
+      }))
+      .filter((candidate) => candidate.score > 0.3)
+      .sort((a, b) => b.score - a.score);
+
+    if (availableThreeSides.length >= count) {
+      return availableThreeSides
+        .slice(0, count)
+        .sort((a, b) => a.angle - b.angle);
+    }
+  }
+
+  return filteredCandidates
     .map((candidate) => ({
       ...candidate,
       score: scoreSlot(atom, candidate)
@@ -132,13 +160,49 @@ function getAnnotationSlots(atom, count) {
 
 function scoreSlot(atom, candidate) {
   const neighborAngles = (atom.neighbors || []).map((neighbor) => Math.atan2(neighbor.y - atom.y, neighbor.x - atom.x));
-  const awayFromBonds = neighborAngles.length
-    ? Math.min(...neighborAngles.map((angle) => angularDistance(candidate.angle, angle)))
+  const hydrogenAngles = getHydrogenAngles(atom);
+  const allOccupiedAngles = [...neighborAngles, ...hydrogenAngles];
+
+  const awayFromBonds = allOccupiedAngles.length
+    ? Math.min(...allOccupiedAngles.map((angle) => angularDistance(candidate.angle, angle)))
     : Math.PI;
   const verticalPreference = candidate.dy < 0 ? 0.18 : 0;
   const diagonalPreference = candidate.dx !== 0 && candidate.dy !== 0 ? 0.08 : 0;
 
   return awayFromBonds + verticalPreference + diagonalPreference;
+}
+
+function getHydrogenAngles(atom) {
+  const hydrogenCount = Math.max(0, Number.parseInt(atom.hydrogenCount || 0, 10) || 0);
+  if (hydrogenCount === 0) {
+    return [];
+  }
+
+  const hydrogenSlots = [
+    { dx: -28, dy: -16 },
+    { dx: 28, dy: -16 },
+    { dx: 30, dy: 14 },
+    { dx: -30, dy: 14 },
+    { dx: 0, dy: -32 },
+    { dx: 0, dy: 32 }
+  ];
+
+  const neighborAngles = (atom.neighbors || []).map((neighbor) =>
+    Math.atan2(neighbor.y - atom.y, neighbor.x - atom.x)
+  );
+
+  const scoredSlots = hydrogenSlots
+    .map((slot) => {
+      const angle = Math.atan2(slot.dy, slot.dx);
+      const score = neighborAngles.length
+        ? Math.min(...neighborAngles.map((na) => angularDistance(angle, na)))
+        : Math.PI;
+      return { angle, score };
+    })
+    .sort((a, b) => b.score - a.score)
+    .slice(0, hydrogenCount);
+
+  return scoredSlots.map((slot) => slot.angle);
 }
 
 function slot(dx, dy) {
