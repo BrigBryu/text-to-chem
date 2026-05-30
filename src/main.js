@@ -91,7 +91,8 @@ const DEFAULT_RENDER_SETTINGS = {
   renderMode: "line",
   showExportActions: false,
   maxTabs: 10,
-  transparentBackground: false
+  transparentBackground: false,
+  showNavFeedback: false
 };
 const DEFAULT_IMPORT_PREFERENCES = {
   openInNewTab: true
@@ -220,6 +221,13 @@ app.innerHTML = `
             <small>Use transparent backgrounds for card exports and reduced opacity for panels.</small>
           </span>
         </label>
+        <label class="settings-check-option">
+          <input id="showNavFeedback" type="checkbox" />
+          <span>
+            <strong>Show navigation feedback</strong>
+            <small>Display card position toast when navigating with vim keys.</small>
+          </span>
+        </label>
       </fieldset>
       <fieldset class="settings-group">
         <legend>Color theme</legend>
@@ -264,6 +272,7 @@ const resetDemo = document.querySelector("#resetDemo");
 const renderModeInputs = Array.from(document.querySelectorAll("input[name='renderMode']"));
 const showExportActions = document.querySelector("#showExportActions");
 const transparentBackground = document.querySelector("#transparentBackground");
+const showNavFeedback = document.querySelector("#showNavFeedback");
 const themeSelect = document.querySelector("#themeSelect");
 const maxTabsSlider = document.querySelector("#maxTabsSlider");
 const maxTabsValue = document.querySelector("#maxTabsValue");
@@ -368,6 +377,13 @@ settingsDialog.addEventListener("change", (event) => {
     trackUsageEvent("profile-changed", "transparent-background");
     inputVersion += 1;
     renderFromInput();
+  } else if (event.target === showNavFeedback) {
+    renderSettings = normalizeRenderSettings({
+      ...renderSettings,
+      showNavFeedback: showNavFeedback.checked
+    });
+    saveRenderSettings();
+    trackUsageEvent("profile-changed", "nav-feedback");
   }
 });
 
@@ -675,7 +691,9 @@ function selectCard(index) {
     selectedCard.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  showVimFeedback(`Card ${newIndex + 1}/${count}`);
+  if (renderSettings.showNavFeedback) {
+    showVimFeedback(`Card ${newIndex + 1}/${count}`);
+  }
 }
 
 function yankSelectedCard() {
@@ -1060,7 +1078,10 @@ function normalizeRenderSettings(settings) {
       : DEFAULT_RENDER_SETTINGS.maxTabs,
     transparentBackground: typeof settings?.transparentBackground === "boolean"
       ? settings.transparentBackground
-      : DEFAULT_RENDER_SETTINGS.transparentBackground
+      : DEFAULT_RENDER_SETTINGS.transparentBackground,
+    showNavFeedback: typeof settings?.showNavFeedback === "boolean"
+      ? settings.showNavFeedback
+      : DEFAULT_RENDER_SETTINGS.showNavFeedback
   };
 }
 
@@ -1070,6 +1091,7 @@ function syncSettingsUi() {
   });
   showExportActions.checked = renderSettings.showExportActions;
   transparentBackground.checked = renderSettings.transparentBackground;
+  showNavFeedback.checked = renderSettings.showNavFeedback;
   themeSelect.value = getThemeId();
   maxTabsSlider.value = String(renderSettings.maxTabs);
   maxTabsValue.textContent = String(renderSettings.maxTabs);
